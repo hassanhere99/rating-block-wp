@@ -61,6 +61,7 @@ $rating_block_wp_strings = array(
 	/* translators: %s: the score the user gave, from 1 to 5. */
 	'saved'            => __( 'You rated this %s out of 5.', 'rating-block-wp' ),
 	'saveFailed'       => __( 'Your rating could not be saved.', 'rating-block-wp' ),
+	'sessionExpired'   => __( 'Your session has expired. Reload the page to rate.', 'rating-block-wp' ),
 	/* translators: %s: the score the user gave before, from 1 to 5. */
 	'previousRestored' => __( 'Your previous rating of %s out of 5 is unchanged.', 'rating-block-wp' ),
 	'noPreviousRating' => __( 'No rating was recorded.', 'rating-block-wp' ),

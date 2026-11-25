@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildSummary, format, formatNumber } from '../summary';
+import {
+	buildSummary,
+	format,
+	formatNumber,
+	isSessionExpired,
+} from '../summary';
 
 const strings = {
 	noRatings: 'No ratings yet',
@@ -72,5 +77,28 @@ describe( 'buildSummary', () => {
 				'en-US'
 			)
 		).toBe( '4.3 out of 5' );
+	} );
+} );
+
+describe( 'isSessionExpired', () => {
+	it( 'is true for any 401', () => {
+		expect( isSessionExpired( 401, undefined ) ).toBe( true );
+		expect( isSessionExpired( 401, 'anything' ) ).toBe( true );
+	} );
+
+	it( 'is true for the nonce check that core runs first', () => {
+		expect( isSessionExpired( 403, 'rest_cookie_invalid_nonce' ) ).toBe(
+			true
+		);
+	} );
+
+	it( 'is false for other failures', () => {
+		expect(
+			isSessionExpired( 403, 'rating_block_wp_post_forbidden' )
+		).toBe( false );
+		expect( isSessionExpired( 500, 'rating_block_wp_save_failed' ) ).toBe(
+			false
+		);
+		expect( isSessionExpired( undefined, undefined ) ).toBe( false );
 	} );
 } );

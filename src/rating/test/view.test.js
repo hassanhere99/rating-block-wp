@@ -25,6 +25,7 @@ const STRINGS = {
 	averageWithCount: '%1$s out of 5. Ratings: %2$s',
 	saved: 'You rated this %s out of 5.',
 	saveFailed: 'Your rating could not be saved.',
+	sessionExpired: 'Your session has expired. Reload the page to rate.',
 	previousRestored: 'Your previous rating of %s out of 5 is unchanged.',
 	noPreviousRating: 'No rating was recorded.',
 };
@@ -180,6 +181,102 @@ describe( 'vote action', () => {
 			expect( mocks.context.message ).toBe(
 				'Your rating could not be saved. Your previous rating of 2 out of 5 is unchanged.'
 			);
+		} );
+
+		describe( 'an expired session', () => {
+			const EXPIRED =
+				'Your session has expired. Reload the page to rate. Your previous rating of 2 out of 5 is unchanged.';
+
+			it( 'says so when core rejects the nonce', async () => {
+				globalThis.fetch.mockReturnValue(
+					jsonResponse(
+						{
+							code: 'rest_cookie_invalid_nonce',
+							message: 'Cookie check failed',
+						},
+						false,
+						403
+					)
+				);
+
+				await run( mocks.definition.actions.vote( change( 5 ) ) );
+
+				expect( mocks.context.message ).toBe( EXPIRED );
+				expect( mocks.context.isError ).toBe( true );
+				// Still rolled back.
+				expect( mocks.context.userScore ).toBe( 2 );
+			} );
+
+			it( 'says so for a 401 from the vote endpoint', async () => {
+				globalThis.fetch.mockReturnValue(
+					jsonResponse(
+						{ code: 'rating_block_wp_not_logged_in' },
+						false,
+						401
+					)
+				);
+
+				await run( mocks.definition.actions.vote( change( 5 ) ) );
+
+				expect( mocks.context.message ).toBe( EXPIRED );
+				expect( mocks.context.userScore ).toBe( 2 );
+			} );
+
+			it( 'says so for any 401, even when the body is not JSON', async () => {
+				globalThis.fetch.mockReturnValue(
+					Promise.resolve( {
+						ok: false,
+						status: 401,
+						json: () =>
+							Promise.reject( new SyntaxError( 'not json' ) ),
+					} )
+				);
+
+				await run( mocks.definition.actions.vote( change( 5 ) ) );
+
+				expect( mocks.context.message ).toBe( EXPIRED );
+				expect( mocks.context.userScore ).toBe( 2 );
+			} );
+
+			it( 'says so with no previous rating to restore', async () => {
+				mocks.context.userScore = null;
+				globalThis.fetch.mockReturnValue(
+					jsonResponse(
+						{ code: 'rest_cookie_invalid_nonce' },
+						false,
+						403
+					)
+				);
+
+				await run( mocks.definition.actions.vote( change( 4 ) ) );
+
+				expect( mocks.context.message ).toBe(
+					'Your session has expired. Reload the page to rate. No rating was recorded.'
+				);
+				expect( mocks.context.userScore ).toBeNull();
+			} );
+
+			it.each( [
+				[
+					'a 403 for another reason',
+					403,
+					'rating_block_wp_post_forbidden',
+				],
+				[ 'a 400', 400, 'rest_invalid_param' ],
+				[ 'a 404', 404, 'rating_block_wp_post_not_found' ],
+				[ 'a 500', 500, 'rating_block_wp_save_failed' ],
+			] )( 'does not claim it for %s', async ( name, status, code ) => {
+				globalThis.fetch.mockReturnValue(
+					jsonResponse( { code }, false, status )
+				);
+
+				await run( mocks.definition.actions.vote( change( 5 ) ) );
+
+				expect( mocks.context.message ).toBe(
+					'Your rating could not be saved. Your previous rating of 2 out of 5 is unchanged.'
+				);
+				expect( mocks.context.userScore ).toBe( 2 );
+			} );
 		} );
 
 		it( 'clears the selection when there was no previous rating', async () => {

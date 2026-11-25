@@ -17,7 +17,12 @@ import { getContext, store } from '@wordpress/interactivity';
 /**
  * Internal dependencies
  */
-import { buildSummary, format, formatNumber } from './summary';
+import {
+	buildSummary,
+	format,
+	formatNumber,
+	isSessionExpired,
+} from './summary';
 
 const { state } = store( 'rating-block/rating', {
 	state: {
@@ -71,7 +76,17 @@ const { state } = store( 'rating-block/rating', {
 				);
 
 				if ( ! response.ok ) {
-					throw new Error( `HTTP ${ response.status }` );
+					const failure = new Error( `HTTP ${ response.status }` );
+					failure.status = response.status;
+
+					try {
+						const body = yield response.json();
+						failure.code = body?.code;
+					} catch {
+						// The body is not JSON. The status is still enough to go on.
+					}
+
+					throw failure;
 				}
 
 				const data = yield response.json();
@@ -93,7 +108,7 @@ const { state } = store( 'rating-block/rating', {
 					state.strings.saved,
 					formatNumber( data.user_score, state.locale, 0 )
 				) } ${ context.summary }`;
-			} catch {
+			} catch ( error ) {
 				if ( context.requestId !== requestId ) {
 					return;
 				}
@@ -101,7 +116,14 @@ const { state } = store( 'rating-block/rating', {
 				// Roll back to the score from before this click.
 				context.userScore = previous;
 				context.isError = true;
-				context.message = `${ state.strings.saveFailed } ${
+
+				// An expired session or nonce cannot be fixed by voting again,
+				// so say what to do instead of the generic failure.
+				const reason = isSessionExpired( error?.status, error?.code )
+					? state.strings.sessionExpired
+					: state.strings.saveFailed;
+
+				context.message = `${ reason } ${
 					previous === null || previous === undefined
 						? state.strings.noPreviousRating
 						: format(

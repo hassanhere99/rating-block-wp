@@ -72,3 +72,16 @@ export function buildSummary( { average, count, showCount }, strings, locale ) {
 		formatNumber( count, locale, 0 )
 	);
 }
+
+/**
+ * Whether a failed vote means the login session or the REST nonce is no longer
+ * good. Any 401 does. So does the nonce check that core runs before our code,
+ * which answers 403 with the code rest_cookie_invalid_nonce.
+ *
+ * @param {number|undefined} status HTTP status of the failed response.
+ * @param {string|undefined} code   REST error code from the JSON body.
+ * @return {boolean} True if reloading the page is the fix.
+ */
+export function isSessionExpired( status, code ) {
+	return status === 401 || code === 'rest_cookie_invalid_nonce';
+}
