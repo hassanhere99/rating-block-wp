@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<ruleset name="Rating Block WP">
+	<description>WordPress Coding Standards for rating-block-wp.</description>
+
+	<file>.</file>
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/artifacts/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="ps"/>
+	<arg name="cache" value=".phpcs-cache"/>
+	<arg name="parallel" value="8"/>
+
+	<!-- Language level this plugin supports. -->
+	<config name="testVersion" value="8.1-"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<!-- Lowest WordPress version this plugin supports. -->
+	<config name="minimum_wp_version" value="6.6"/>
+
+	<rule ref="WordPress">
+		<!-- Classes are namespaced and autoload-free, so the file name stays
+		     class-<name>.php, but the PSR-4 style check does not apply. -->
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="rating-block-wp"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Everything global is prefixed. Namespaced code is exempt from the
+	     prefix check by WPCS, but the namespace itself must match. -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="RatingBlockWP"/>
+				<element value="rating_block_wp"/>
+				<element value="RATING_BLOCK_WP"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
