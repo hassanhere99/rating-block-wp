@@ -22,6 +22,9 @@ define( 'RATING_BLOCK_WP_FILE', __FILE__ );
 define( 'RATING_BLOCK_WP_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once RATING_BLOCK_WP_DIR . 'includes/class-schema.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-votes.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-summary.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-rest-controller.php';
 
 register_activation_hook( __FILE__, array( Schema::class, 'install' ) );
 
@@ -29,6 +32,7 @@ register_activation_hook( __FILE__, array( Schema::class, 'install' ) );
 // network-activated plugin. This catches both.
 add_action( 'plugins_loaded', array( Schema::class, 'maybe_upgrade' ) );
 
+Rest_Controller::register();
 /**
  * Register the block from the built block.json.
  *
