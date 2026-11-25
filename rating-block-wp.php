@@ -24,6 +24,7 @@ define( 'RATING_BLOCK_WP_DIR', plugin_dir_path( __FILE__ ) );
 require_once RATING_BLOCK_WP_DIR . 'includes/class-schema.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-votes.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-summary.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-access.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-rest-controller.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-cleanup.php';
 
