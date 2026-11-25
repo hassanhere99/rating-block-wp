@@ -22,12 +22,19 @@ define( 'RATING_BLOCK_WP_FILE', __FILE__ );
 define( 'RATING_BLOCK_WP_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once RATING_BLOCK_WP_DIR . 'includes/class-schema.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-votes.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-summary.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-rest-controller.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-cleanup.php';
 
 register_activation_hook( __FILE__, array( Schema::class, 'install' ) );
 
 // Activation hooks do not run on update, and do not run per site for a
 // network-activated plugin. This catches both.
 add_action( 'plugins_loaded', array( Schema::class, 'maybe_upgrade' ) );
+
+Rest_Controller::register();
+Cleanup::register();
 
 /**
  * Register the block from the built block.json.

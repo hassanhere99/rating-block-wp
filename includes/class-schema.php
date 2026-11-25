@@ -124,7 +124,10 @@ final class Schema {
 	}
 
 	/**
-	 * Drop the table and remove this site's options and transients.
+	 * Drop the table and remove this site's options.
+	 *
+	 * Cached summaries are not stored in the database, so there is nothing to
+	 * delete for them. With a persistent object cache they expire on their TTL.
 	 *
 	 * Called from uninstall.php, once per site on multisite.
 	 *
@@ -137,14 +140,5 @@ final class Schema {
 		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', self::table_name() ) );
 
 		delete_option( self::VERSION_OPTION );
-
-		// Transients live in wp_options unless an external object cache is in
-		// use. With an external cache they expire on their own TTL and there is
-		// nothing in the database to delete.
-		$like_value   = $wpdb->esc_like( '_transient_rating_block_wp_' ) . '%';
-		$like_timeout = $wpdb->esc_like( '_transient_timeout_rating_block_wp_' ) . '%';
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk delete of this plugin's transients by prefix; no API exists for it.
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s", $like_value, $like_timeout ) );
 	}
 }
