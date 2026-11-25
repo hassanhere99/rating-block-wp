@@ -1,0 +1,27 @@
+{
+	"name": "rating-block-wp",
+	"version": "0.1.0",
+	"description": "A 1 to 5 star rating block for the current post.",
+	"author": "Muhammad Hassan",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build --experimental-modules --blocks-manifest",
+		"start": "wp-scripts start --experimental-modules --blocks-manifest",
+		"format": "wp-scripts format",
+		"lint:css": "wp-scripts lint-style",
+		"lint:js": "wp-scripts lint-js",
+		"wp-env": "wp-env"
+	},
+	"dependencies": {
+		"@wordpress/interactivity": "8.2.0"
+	},
+	"devDependencies": {
+		"@wordpress/block-editor": "20.1.0",
+		"@wordpress/blocks": "17.2.0",
+		"@wordpress/components": "45.0.0",
+		"@wordpress/env": "12.2.0",
+		"@wordpress/i18n": "7.2.0",
+		"@wordpress/scripts": "37.2.0"
+	},
+	"private": true
+}
