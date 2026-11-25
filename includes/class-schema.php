@@ -54,6 +54,11 @@ final class Schema {
 	 * the MySQL and MariaDB versions WordPress supports, so the writer sets
 	 * both values explicitly, in UTC.
 	 *
+	 * No separate index on post_id. The unique key leads with post_id, so it
+	 * already serves every lookup by post. Lookups by user_id alone (deleting a
+	 * user's votes) have no index and scan the table; that is a rare admin
+	 * operation, and a user_id index would cost write overhead on every vote.
+	 *
 	 * The 1 to 5 range on score is enforced in PHP. CHECK constraints are
 	 * ignored by MySQL before 8.0.16 and dbDelta() does not manage them.
 	 *
@@ -73,8 +78,7 @@ final class Schema {
 	created_at datetime NOT NULL,
 	updated_at datetime NOT NULL,
 	PRIMARY KEY  (id),
-	UNIQUE KEY post_user (post_id,user_id),
-	KEY post_id (post_id)
+	UNIQUE KEY post_user (post_id,user_id)
 ) {$charset_collate};";
 	}
 
