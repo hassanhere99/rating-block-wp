@@ -8,6 +8,7 @@
 namespace RatingBlockWP\Tests;
 
 use RatingBlockWP\Votes;
+use WP_REST_Request;
 
 /**
  * Voting endpoint.
@@ -247,7 +248,7 @@ final class Rest_Vote_Test extends Test_Case {
 		$this->assertSame( 2, $this->row_count( null, $user_id ) );
 	}
 
-	public function test_routes_are_registered_with_a_permission_callback_and_schema(): void {
+	public function test_routes_are_registered_with_a_permission_callback(): void {
 		$routes = rest_get_server()->get_routes( 'rating-block/v1' );
 
 		foreach ( array( 'vote', 'summary' ) as $name ) {
@@ -255,7 +256,34 @@ final class Rest_Vote_Test extends Test_Case {
 
 			$this->assertArrayHasKey( $route, $routes );
 			$this->assertIsCallable( $routes[ $route ][0]['permission_callback'] );
-			$this->assertIsCallable( $routes[ $route ][0]['schema'] );
 		}
+	}
+
+	/**
+	 * The schema is only useful if an OPTIONS request returns it.
+	 *
+	 * @dataProvider routes_with_a_schema
+	 *
+	 * @param string $route Route path.
+	 */
+	public function test_options_request_exposes_the_response_schema( string $route ): void {
+		$response = rest_do_request( new WP_REST_Request( 'OPTIONS', $route ) );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertArrayHasKey( 'schema', $data );
+		$this->assertSame( array( 'average', 'count', 'user_score' ), array_keys( $data['schema']['properties'] ) );
+	}
+
+	/**
+	 * Both routes.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function routes_with_a_schema(): array {
+		return array(
+			'vote'    => array( '/rating-block/v1/posts/1/vote' ),
+			'summary' => array( '/rating-block/v1/posts/1/summary' ),
+		);
 	}
 }

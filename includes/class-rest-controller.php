@@ -54,24 +54,28 @@ final class Rest_Controller {
 			'required'    => true,
 		);
 
+		// 'schema' is a sibling of the endpoint arrays, not a key inside one.
+		// Core only reads it at the route level, for OPTIONS requests.
 		register_rest_route(
 			self::REST_NAMESPACE,
 			'/posts/(?P<id>\d+)/vote',
 			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'callback'            => array( __CLASS__, 'create_vote' ),
-				'permission_callback' => array( __CLASS__, 'create_vote_permissions_check' ),
-				'args'                => array(
-					'id'    => $post_id_arg,
-					'score' => array(
-						'description' => __( 'Score from 1 to 5.', 'rating-block-wp' ),
-						'type'        => 'integer',
-						'minimum'     => Votes::MIN_SCORE,
-						'maximum'     => Votes::MAX_SCORE,
-						'required'    => true,
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( __CLASS__, 'create_vote' ),
+					'permission_callback' => array( __CLASS__, 'create_vote_permissions_check' ),
+					'args'                => array(
+						'id'    => $post_id_arg,
+						'score' => array(
+							'description' => __( 'Score from 1 to 5.', 'rating-block-wp' ),
+							'type'        => 'integer',
+							'minimum'     => Votes::MIN_SCORE,
+							'maximum'     => Votes::MAX_SCORE,
+							'required'    => true,
+						),
 					),
 				),
-				'schema'              => array( __CLASS__, 'get_item_schema' ),
+				'schema' => array( __CLASS__, 'get_item_schema' ),
 			)
 		);
 
@@ -79,13 +83,15 @@ final class Rest_Controller {
 			self::REST_NAMESPACE,
 			'/posts/(?P<id>\d+)/summary',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( __CLASS__, 'get_summary' ),
-				'permission_callback' => array( __CLASS__, 'get_summary_permissions_check' ),
-				'args'                => array(
-					'id' => $post_id_arg,
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( __CLASS__, 'get_summary' ),
+					'permission_callback' => array( __CLASS__, 'get_summary_permissions_check' ),
+					'args'                => array(
+						'id' => $post_id_arg,
+					),
 				),
-				'schema'              => array( __CLASS__, 'get_item_schema' ),
+				'schema' => array( __CLASS__, 'get_item_schema' ),
 			)
 		);
 	}
