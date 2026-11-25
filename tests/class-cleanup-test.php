@@ -7,6 +7,7 @@
 
 namespace RatingBlockWP\Tests;
 
+use RatingBlockWP\Schema;
 use RatingBlockWP\Summary;
 use RatingBlockWP\Votes;
 
@@ -82,6 +83,71 @@ final class Cleanup_Test extends Test_Case {
 		$this->assertFalse( $this->is_cached( $doomed ) );
 		$this->assertSame( 1, $this->row_count( $kept ), 'Votes on other posts are untouched.' );
 		$this->assertTrue( $this->is_cached( $kept ) );
+	}
+
+	/**
+	 * Revisions and menu items return early and never touch the votes table.
+	 *
+	 * @dataProvider skipped_post_types
+	 *
+	 * @param string $post_type Post type that is skipped.
+	 */
+	public function test_skipped_post_types_do_not_query_the_votes_table( string $post_type ): void {
+		$parent = $this->make_post();
+		$id     = self::factory()->post->create(
+			array(
+				'post_type'   => $post_type,
+				'post_status' => 'revision' === $post_type ? 'inherit' : 'publish',
+				'post_parent' => 'revision' === $post_type ? $parent : 0,
+			)
+		);
+		$this->assertSame( $post_type, get_post_type( $id ), 'Precondition: the post has the expected type.' );
+
+		$queries = array();
+		$table   = Schema::table_name();
+		$capture = static function ( $query ) use ( &$queries, $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				$queries[] = $query;
+			}
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_delete_post( $id, true );
+		remove_filter( 'query', $capture );
+
+		$this->assertSame( array(), $queries );
+	}
+
+	/**
+	 * Types skipped by the cleanup.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function skipped_post_types(): array {
+		return array(
+			'revision'      => array( 'revision' ),
+			'nav_menu_item' => array( 'nav_menu_item' ),
+		);
+	}
+
+	public function test_deleting_an_ordinary_post_queries_the_votes_table(): void {
+		$post_id = $this->make_post();
+		$queries = array();
+		$table   = Schema::table_name();
+		$capture = static function ( $query ) use ( &$queries, $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				$queries[] = $query;
+			}
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_delete_post( $post_id, true );
+		remove_filter( 'query', $capture );
+
+		$this->assertCount( 1, $queries, 'Control: the same capture does see the delete for a normal post.' );
+		$this->assertStringStartsWith( 'DELETE', $queries[0] );
 	}
 
 	public function test_trashing_a_post_keeps_its_votes(): void {

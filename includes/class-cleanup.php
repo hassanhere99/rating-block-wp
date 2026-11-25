@@ -7,6 +7,8 @@
 
 namespace RatingBlockWP;
 
+use WP_Post;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -28,7 +30,7 @@ final class Cleanup {
 	 */
 	public static function register(): void {
 		add_action( 'deleted_user', array( __CLASS__, 'on_deleted_user' ) );
-		add_action( 'before_delete_post', array( __CLASS__, 'on_before_delete_post' ) );
+		add_action( 'before_delete_post', array( __CLASS__, 'on_before_delete_post' ), 10, 2 );
 	}
 
 	/**
@@ -57,12 +59,24 @@ final class Cleanup {
 	}
 
 	/**
+	 * Post types that can never have votes, and that WordPress creates and
+	 * deletes in bulk. Revisions are pruned on every save and menu items on
+	 * every menu edit, so skipping them avoids a pointless DELETE each time.
+	 */
+	const SKIPPED_POST_TYPES = array( 'revision', 'nav_menu_item' );
+
+	/**
 	 * Delete a post's votes and its cached summary.
 	 *
-	 * @param int $post_id ID of the post about to be deleted.
+	 * @param int          $post_id ID of the post about to be deleted.
+	 * @param WP_Post|null $post    The post. Used to skip types that cannot have votes.
 	 * @return void
 	 */
-	public static function on_before_delete_post( $post_id ): void {
+	public static function on_before_delete_post( $post_id, $post = null ): void {
+		if ( $post instanceof WP_Post && in_array( $post->post_type, self::SKIPPED_POST_TYPES, true ) ) {
+			return;
+		}
+
 		$post_id = (int) $post_id;
 
 		Votes::delete_for_post( $post_id );
