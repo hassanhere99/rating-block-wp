@@ -103,28 +103,23 @@ abstract class Test_Case extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Whether a summary is in either cache layer.
+	 * Whether a summary is in the object cache.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	protected function is_cached( int $post_id ): bool {
-		$key = Summary::KEY_PREFIX . $post_id;
-
-		return false !== wp_cache_get( $key, Summary::CACHE_GROUP ) || false !== get_transient( $key );
+		return false !== wp_cache_get( Summary::KEY_PREFIX . $post_id, Summary::CACHE_GROUP );
 	}
 
 	/**
-	 * Put a made-up summary in both cache layers.
+	 * Put a made-up summary in the object cache.
 	 *
 	 * @param int   $post_id Post ID.
 	 * @param array $value   Value to store.
 	 * @return void
 	 */
 	protected function seed_cache( int $post_id, array $value ): void {
-		$key = Summary::KEY_PREFIX . $post_id;
-
-		wp_cache_set( $key, $value, Summary::CACHE_GROUP, HOUR_IN_SECONDS );
-		set_transient( $key, $value, HOUR_IN_SECONDS );
+		wp_cache_set( Summary::KEY_PREFIX . $post_id, $value, Summary::CACHE_GROUP, HOUR_IN_SECONDS );
 	}
 }

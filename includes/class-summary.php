@@ -31,22 +31,27 @@ final class Summary {
 	const CACHE_GROUP = 'rating_block_wp';
 
 	/**
-	 * Transient key prefix. uninstall.php deletes options matching it.
+	 * Cache key prefix, within CACHE_GROUP.
 	 */
-	const KEY_PREFIX = 'rating_block_wp_summary_';
+	const KEY_PREFIX = 'summary_';
 
 	/**
 	 * Backstop for the read-side race described above. Not the freshness
-	 * mechanism; invalidation is.
+	 * mechanism; invalidation is. It only matters with a persistent object
+	 * cache.
 	 */
 	const CACHE_TTL = 5 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Count and average for a post, from cache when possible.
 	 *
-	 * With a persistent object cache, wp_cache_* is the only store. Without
-	 * one, wp_cache_* only lasts for the request, so a transient (a database
-	 * option) carries the value between requests.
+	 * Uses wp_cache_* only. With a persistent object cache the value is shared
+	 * between requests. Without one it lasts for the current request, which
+	 * still saves repeat queries when a page has several rating blocks for the
+	 * same post. There is deliberately no transient fallback: a transient is
+	 * a pair of rows in wp_options, so a hit costs two option reads and a miss
+	 * adds writes, which is more than the indexed COUNT and AVG on the votes
+	 * table that it would replace.
 	 *
 	 * @param int $post_id Post ID.
 	 * @return array{count: int, average: float}
@@ -96,7 +101,6 @@ final class Summary {
 	 */
 	public static function invalidate( int $post_id ): void {
 		wp_cache_delete( self::key( $post_id ), self::CACHE_GROUP );
-		delete_transient( self::key( $post_id ) );
 	}
 
 	/**
@@ -116,13 +120,7 @@ final class Summary {
 	 * @return mixed False on a miss.
 	 */
 	private static function cache_get( int $post_id ) {
-		$value = wp_cache_get( self::key( $post_id ), self::CACHE_GROUP );
-
-		if ( false === $value && ! wp_using_ext_object_cache() ) {
-			$value = get_transient( self::key( $post_id ) );
-		}
-
-		return $value;
+		return wp_cache_get( self::key( $post_id ), self::CACHE_GROUP );
 	}
 
 	/**
@@ -134,9 +132,5 @@ final class Summary {
 	 */
 	private static function cache_set( int $post_id, array $summary ): void {
 		wp_cache_set( self::key( $post_id ), $summary, self::CACHE_GROUP, self::CACHE_TTL );
-
-		if ( ! wp_using_ext_object_cache() ) {
-			set_transient( self::key( $post_id ), $summary, self::CACHE_TTL );
-		}
 	}
 }

@@ -11,8 +11,8 @@ use RatingBlockWP\Summary;
 use RatingBlockWP\Votes;
 
 /**
- * Cache behaviour. The test environment has no persistent object cache, so
- * these exercise the transient fallback and the in-request cache together.
+ * Cache behaviour. The test environment has no persistent object cache, so the
+ * cache lasts for the request; the logic is the same as with a persistent one.
  */
 final class Summary_Cache_Test extends Test_Case {
 
@@ -23,8 +23,22 @@ final class Summary_Cache_Test extends Test_Case {
 
 		Summary::get( $post_id );
 
-		$this->assertNotFalse( get_transient( Summary::KEY_PREFIX . $post_id ), 'Transient fallback is written.' );
-		$this->assertNotFalse( wp_cache_get( Summary::KEY_PREFIX . $post_id, Summary::CACHE_GROUP ), 'Object cache is written.' );
+		$this->assertTrue( $this->is_cached( $post_id ) );
+	}
+
+	public function test_nothing_is_written_to_the_options_table(): void {
+		global $wpdb;
+
+		$post_id = $this->make_post();
+		Votes::upsert( $post_id, $this->make_user(), 4 );
+
+		Summary::get( $post_id );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Test assertion, no user input.
+		$rows = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE '%transient%rating_block_wp%'" );
+		// phpcs:enable
+
+		$this->assertSame( array(), $rows, 'No transient fallback: the summary is not stored in wp_options.' );
 	}
 
 	public function test_a_cached_value_is_served_without_touching_the_table(): void {
@@ -38,22 +52,6 @@ final class Summary_Cache_Test extends Test_Case {
 		);
 
 		$this->assertSame( 42, Summary::get( $post_id )['count'] );
-	}
-
-	public function test_the_transient_serves_a_request_that_has_no_object_cache_entry(): void {
-		$post_id = $this->make_post();
-		$this->seed_cache(
-			$post_id,
-			array(
-				'count'   => 7,
-				'average' => 3.0,
-			)
-		);
-
-		// A new request starts with an empty in-memory cache.
-		wp_cache_flush();
-
-		$this->assertSame( 7, Summary::get( $post_id )['count'] );
 	}
 
 	public function test_a_vote_invalidates_a_stale_cached_summary(): void {
