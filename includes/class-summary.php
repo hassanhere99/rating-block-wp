@@ -81,16 +81,25 @@ final class Summary {
 	 *
 	 * @param int $post_id Post ID.
 	 * @param int $user_id User ID, or 0 for a logged-out visitor.
-	 * @return array{average: float, count: int, user_score: int|null}
+	 * @return array{average: float|null, count: int, user_score: int|null}
 	 */
 	public static function get_for_user( int $post_id, int $user_id ): array {
-		$summary = self::get( $post_id );
+		return self::with_user_score( self::get( $post_id ), $post_id, $user_id );
+	}
 
-		return array(
-			'average'    => $summary['average'],
-			'count'      => $summary['count'],
-			'user_score' => Votes::user_score( $post_id, $user_id ),
-		);
+	/**
+	 * The same shape as get_for_user(), computed from the table and without
+	 * reading or writing the cache.
+	 *
+	 * Used for the response to a vote. The vote has just changed the data, and
+	 * this must not put an aggregate into the cache: see the class docblock.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param int $user_id User ID.
+	 * @return array{average: float|null, count: int, user_score: int|null}
+	 */
+	public static function get_fresh_for_user( int $post_id, int $user_id ): array {
+		return self::with_user_score( Votes::aggregate( $post_id ), $post_id, $user_id );
 	}
 
 	/**
@@ -101,6 +110,22 @@ final class Summary {
 	 */
 	public static function invalidate( int $post_id ): void {
 		wp_cache_delete( self::key( $post_id ), self::CACHE_GROUP );
+	}
+
+	/**
+	 * Add the user's own score to an aggregate.
+	 *
+	 * @param array $summary Count and average.
+	 * @param int   $post_id Post ID.
+	 * @param int   $user_id User ID.
+	 * @return array{average: float|null, count: int, user_score: int|null}
+	 */
+	private static function with_user_score( array $summary, int $post_id, int $user_id ): array {
+		return array(
+			'average'    => $summary['average'],
+			'count'      => $summary['count'],
+			'user_score' => Votes::user_score( $post_id, $user_id ),
+		);
 	}
 
 	/**

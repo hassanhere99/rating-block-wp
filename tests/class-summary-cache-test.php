@@ -73,6 +73,32 @@ final class Summary_Cache_Test extends Test_Case {
 		$this->assertSame( 1, Summary::get( $post_id )['count'] );
 	}
 
+	public function test_a_vote_leaves_the_cache_entry_absent(): void {
+		$post_id = $this->make_post();
+		$this->seed_cache(
+			$post_id,
+			array(
+				'count'   => 99,
+				'average' => 1.0,
+			)
+		);
+
+		wp_set_current_user( $this->make_user() );
+		$response = $this->post_vote( $post_id, 5 );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertFalse( $this->is_cached( $post_id ), 'The stale entry is gone and the vote did not write a new one.' );
+	}
+
+	public function test_a_vote_on_an_uncached_post_does_not_create_an_entry(): void {
+		$post_id = $this->make_post();
+
+		wp_set_current_user( $this->make_user() );
+		$this->post_vote( $post_id, 3 );
+
+		$this->assertFalse( $this->is_cached( $post_id ) );
+	}
+
 	public function test_a_vote_removes_the_cache_entry_before_the_next_read(): void {
 		$post_id = $this->make_post();
 		$user_id = $this->make_user();

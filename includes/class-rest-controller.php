@@ -173,7 +173,9 @@ final class Rest_Controller {
 		// After the write, so a reader that recomputes now sees the new row.
 		Summary::invalidate( $post_id );
 
-		return rest_ensure_response( Summary::get_for_user( $post_id, $user_id ) );
+		// Computed from the table and not cached. Putting this aggregate in the
+		// cache would be the write-through the Summary docblock rules out.
+		return rest_ensure_response( Summary::get_fresh_for_user( $post_id, $user_id ) );
 	}
 
 	/**
