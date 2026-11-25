@@ -157,7 +157,32 @@ final class Rest_Controller {
 
 		$post = self::check_post( (int) $request['id'], true );
 
-		return is_wp_error( $post ) ? $post : true;
+		if ( is_wp_error( $post ) ) {
+			return $post;
+		}
+
+		/**
+		 * Filters whether a post can be rated.
+		 *
+		 * Runs after the built-in checks, so it can only narrow what they
+		 * allow. Return false to refuse votes on a post, for example by post
+		 * type or by a meta flag. It applies to voting only; summaries stay
+		 * readable.
+		 *
+		 * @since 0.1.0
+		 *
+		 * @param bool    $is_rateable Whether the post can be rated. Default true.
+		 * @param WP_Post $post        The post being voted on.
+		 */
+		if ( ! (bool) apply_filters( 'rating_block_wp_post_is_rateable', true, $post ) ) {
+			return new WP_Error(
+				'rating_block_wp_post_not_rateable',
+				__( 'This post cannot be rated.', 'rating-block-wp' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		return true;
 	}
 
 	/**

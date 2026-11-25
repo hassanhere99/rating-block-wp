@@ -155,6 +155,52 @@ final class Rest_Vote_Test extends Test_Case {
 		$this->assertSame( 0, $this->row_count() );
 	}
 
+	public function test_rateable_filter_returning_false_gives_403(): void {
+		wp_set_current_user( $this->make_user() );
+		$post_id = $this->make_post();
+
+		add_filter( 'rating_block_wp_post_is_rateable', '__return_false' );
+		$response = $this->post_vote( $post_id, 4 );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertSame( 'rating_block_wp_post_not_rateable', $response->get_data()['code'] );
+		$this->assertSame( 0, $this->row_count() );
+	}
+
+	public function test_rateable_filter_receives_true_and_the_post(): void {
+		wp_set_current_user( $this->make_user() );
+		$post_id  = $this->make_post();
+		$received = array();
+
+		add_filter(
+			'rating_block_wp_post_is_rateable',
+			static function ( $is_rateable, $post ) use ( &$received ) {
+				$received = array( $is_rateable, $post );
+				return $is_rateable;
+			},
+			10,
+			2
+		);
+
+		$this->assertSame( 200, $this->post_vote( $post_id, 4 )->get_status() );
+		$this->assertTrue( $received[0] );
+		$this->assertInstanceOf( \WP_Post::class, $received[1] );
+		$this->assertSame( $post_id, $received[1]->ID );
+	}
+
+	public function test_rateable_filter_cannot_allow_what_the_built_in_checks_refuse(): void {
+		wp_set_current_user( $this->make_user() );
+		add_filter( 'rating_block_wp_post_is_rateable', '__return_true' );
+
+		$this->assertSame( 403, $this->post_vote( $this->make_post( 'draft' ), 4 )->get_status() );
+	}
+
+	public function test_rateable_filter_does_not_affect_the_summary(): void {
+		add_filter( 'rating_block_wp_post_is_rateable', '__return_false' );
+
+		$this->assertSame( 200, $this->get_summary( $this->make_post() )->get_status() );
+	}
+
 	public function test_first_vote_inserts_a_row(): void {
 		$user_id = $this->make_user();
 		$post_id = $this->make_post();
