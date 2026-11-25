@@ -10,6 +10,7 @@
 		"format": "wp-scripts format",
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
+		"test:js": "wp-scripts test-unit-js",
 		"wp-env": "wp-env",
 		"env:start": "wp-env start",
 		"env:test:start": "wp-env start --config=.wp-env.test.json",
@@ -24,7 +25,9 @@
 		"@wordpress/components": "45.0.0",
 		"@wordpress/env": "12.2.0",
 		"@wordpress/i18n": "7.2.0",
-		"@wordpress/scripts": "37.2.0"
+		"@wordpress/scripts": "37.2.0",
+		"vite": "8.3.8",
+		"vitest": "5.1.2"
 	},
 	"private": true
 }
