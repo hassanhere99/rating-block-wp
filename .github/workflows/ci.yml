@@ -1,0 +1,188 @@
+name: CI
+
+# Runs on every push, so a branch is checked before a pull request exists.
+# There is no pull_request trigger: for branches in this repository it would run
+# every commit twice.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  phpcs:
+    name: PHPCS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      # The platform in composer.json is pinned to PHP 8.1, so the lock file
+      # resolves the same on any PHP. Lint with the lowest supported version.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+          coverage: none
+
+      - name: Find the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - run: composer lint
+
+  js:
+    name: JS lint, unit tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint:js
+      - run: npm run lint:css
+      - run: npm run test:js
+      - run: npm run build
+
+  phpunit:
+    name: PHPUnit (WP ${{ matrix.wp }}, PHP ${{ matrix.php }}${{ matrix.multisite && ', multisite' || '' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        wp: ['6.6', 'latest']
+        php: ['8.1', '8.3']
+        multisite: [false]
+        include:
+          # One network run, on the newest combination.
+          - wp: 'latest'
+            php: '8.3'
+            multisite: true
+    env:
+      WP_ENV_PHP_VERSION: ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # wp-env uses the latest WordPress unless told otherwise.
+      - name: Select the WordPress version
+        if: matrix.wp != 'latest'
+        run: echo "WP_ENV_CORE=WordPress/WordPress#${{ matrix.wp }}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # Composer runs on the host. The plugin directory is mounted into the
+      # container, so vendor/ is there for PHPUnit. The tests then run on the
+      # container's PHP, which is the matrix version.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+          coverage: none
+
+      - name: Find the Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      # The block is registered from build/, so it must exist before the tests.
+      - run: npm ci
+      - run: npm run build
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Start WordPress
+        run: npx wp-env start --config=.wp-env.test.json
+
+      - name: Show versions
+        run: |
+          npx wp-env run cli --config=.wp-env.test.json wp core version
+          npx wp-env run cli --config=.wp-env.test.json php -v
+
+      - name: PHPUnit
+        if: ${{ !matrix.multisite }}
+        run: npm run test:php
+
+      - name: PHPUnit (multisite)
+        if: ${{ matrix.multisite }}
+        run: npm run test:php:multisite
+
+      - name: WordPress logs
+        if: failure()
+        run: npx wp-env logs --config=.wp-env.test.json --no-watch || true
+
+  e2e:
+    name: E2E (WP ${{ matrix.wp }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        wp: ['6.6', 'latest']
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select the WordPress version
+        if: matrix.wp != 'latest'
+        run: echo "WP_ENV_CORE=WordPress/WordPress#${{ matrix.wp }}" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      # Chromium only. test:e2e skips the all-browsers download; see
+      # NOTES-upstream.md.
+      - run: npx playwright install --with-deps chromium
+
+      - name: Start WordPress
+        run: npx wp-env start
+
+      - run: npm run test:e2e
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-artifacts-wp-${{ matrix.wp }}
+          path: artifacts/
+          retention-days: 7
+          if-no-files-found: ignore
