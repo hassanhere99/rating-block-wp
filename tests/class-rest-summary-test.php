@@ -16,9 +16,9 @@ final class Rest_Summary_Test extends Test_Case {
 		$response = $this->get_summary( $this->make_post() );
 
 		$this->assertSame( 200, $response->get_status() );
-		$this->assertEquals(
+		$this->assertSame(
 			array(
-				'average'    => 0.0,
+				'average'    => null,
 				'count'      => 0,
 				'user_score' => null,
 			),

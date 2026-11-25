@@ -319,6 +319,7 @@ final class Rest_Vote_Test extends Test_Case {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertArrayHasKey( 'schema', $data );
 		$this->assertSame( array( 'average', 'count', 'user_score' ), array_keys( $data['schema']['properties'] ) );
+		$this->assertSame( array( 'number', 'null' ), $data['schema']['properties']['average']['type'] );
 	}
 
 	/**

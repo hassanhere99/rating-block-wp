@@ -108,8 +108,8 @@ final class Rest_Controller {
 			'type'       => 'object',
 			'properties' => array(
 				'average'    => array(
-					'description' => __( 'Average score. 0 when there are no votes.', 'rating-block-wp' ),
-					'type'        => 'number',
+					'description' => __( 'Average score, or null when there are no votes.', 'rating-block-wp' ),
+					'type'        => array( 'number', 'null' ),
 					'readonly'    => true,
 				),
 				'count'      => array(

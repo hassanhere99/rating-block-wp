@@ -54,15 +54,17 @@ final class Summary {
 	 * table that it would replace.
 	 *
 	 * @param int $post_id Post ID.
-	 * @return array{count: int, average: float}
+	 * @return array{count: int, average: float|null}
 	 */
 	public static function get( int $post_id ): array {
 		$cached = self::cache_get( $post_id );
 
-		if ( is_array( $cached ) && isset( $cached['count'], $cached['average'] ) ) {
+		// array_key_exists, not isset: a post with no votes has a null average
+		// and is still a valid cache entry.
+		if ( is_array( $cached ) && array_key_exists( 'count', $cached ) && array_key_exists( 'average', $cached ) ) {
 			return array(
 				'count'   => (int) $cached['count'],
-				'average' => (float) $cached['average'],
+				'average' => null === $cached['average'] ? null : (float) $cached['average'],
 			);
 		}
 

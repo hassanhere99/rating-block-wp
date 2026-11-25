@@ -54,6 +54,25 @@ final class Summary_Cache_Test extends Test_Case {
 		$this->assertSame( 42, Summary::get( $post_id )['count'] );
 	}
 
+	public function test_no_votes_gives_a_null_average(): void {
+		$summary = Summary::get( $this->make_post() );
+
+		$this->assertSame( 0, $summary['count'] );
+		$this->assertNull( $summary['average'] );
+	}
+
+	public function test_a_summary_with_no_votes_is_a_valid_cache_entry(): void {
+		$post_id = $this->make_post();
+		Summary::get( $post_id );
+		$this->assertTrue( $this->is_cached( $post_id ) );
+
+		// Change the table behind the cache's back. A hit still reports no votes.
+		Votes::upsert( $post_id, $this->make_user(), 5 );
+
+		$this->assertSame( 0, Summary::get( $post_id )['count'], 'The null-average entry was served from cache.' );
+		$this->assertNull( Summary::get( $post_id )['average'] );
+	}
+
 	public function test_a_vote_invalidates_a_stale_cached_summary(): void {
 		$post_id = $this->make_post();
 		$this->seed_cache(

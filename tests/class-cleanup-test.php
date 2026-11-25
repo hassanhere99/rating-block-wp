@@ -51,6 +51,7 @@ final class Cleanup_Test extends Test_Case {
 		$this->assertSame( 1, Summary::get( $post_1 )['count'] );
 		$this->assertEquals( 1.0, Summary::get( $post_1 )['average'] );
 		$this->assertSame( 0, Summary::get( $post_2 )['count'] );
+		$this->assertNull( Summary::get( $post_2 )['average'], 'No votes left means a null average.' );
 	}
 
 	public function test_deleting_a_user_with_no_votes_is_harmless(): void {

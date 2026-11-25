@@ -66,8 +66,11 @@ final class Votes {
 	/**
 	 * Count and average for a post, straight from the table.
 	 *
+	 * The average is null when there are no votes. 0 would be a value outside
+	 * the 1 to 5 range and could be mistaken for a real score.
+	 *
 	 * @param int $post_id Post ID.
-	 * @return array{count: int, average: float}
+	 * @return array{count: int, average: float|null}
 	 */
 	public static function aggregate( int $post_id ): array {
 		global $wpdb;
@@ -82,7 +85,7 @@ final class Votes {
 
 		return array(
 			'count'   => $count,
-			'average' => $count > 0 ? round( (float) $row['average'], 2 ) : 0.0,
+			'average' => $count > 0 ? round( (float) $row['average'], 2 ) : null,
 		);
 	}
 
