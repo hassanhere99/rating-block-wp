@@ -26,7 +26,10 @@ defined( 'ABSPATH' ) || exit;
 // shows the right post wherever it is placed.
 $rating_block_wp_post_id = isset( $block->context['postId'] ) ? absint( $block->context['postId'] ) : 0;
 
-if ( ! $rating_block_wp_post_id || ! get_post( $rating_block_wp_post_id ) ) {
+// Show nothing for a post the summary endpoint would refuse, such as a draft
+// the viewer cannot read or a password-protected post that is still locked.
+// The block must not reveal a rating the API would not give out.
+if ( ! $rating_block_wp_post_id || is_wp_error( Access::check_post( $rating_block_wp_post_id, false ) ) ) {
 	return;
 }
 

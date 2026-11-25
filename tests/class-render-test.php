@@ -203,6 +203,88 @@ final class Render_Test extends Test_Case {
 		$this->assertMatchesRegularExpression( '/Ratingloop alpha.*4\.0 out of 5\. Ratings: 3.*Ratingloop beta.*2\.0 out of 5\. Ratings: 1/', $text );
 	}
 
+	public function test_a_password_protected_post_renders_nothing(): void {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_status'   => 'publish',
+				'post_password' => 'secret',
+			)
+		);
+		$this->add_votes( $post_id, array( 5, 5 ) );
+
+		foreach ( array( 0, $this->make_user() ) as $user_id ) {
+			wp_set_current_user( $user_id );
+
+			$this->assertSame( '', trim( $this->render( $post_id ) ), 'No summary for a locked post.' );
+			$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'The endpoint refuses it too.' );
+		}
+	}
+
+	/**
+	 * The block shows a summary if and only if the summary endpoint would
+	 * answer, for every kind of post and every kind of viewer.
+	 *
+	 * @dataProvider post_states_and_viewers
+	 *
+	 * @param string $state  Post state.
+	 * @param string $viewer Viewer kind.
+	 */
+	public function test_the_block_and_the_summary_endpoint_allow_the_same_posts( string $state, string $viewer ): void {
+		switch ( $state ) {
+			case 'password':
+				$post_id = self::factory()->post->create(
+					array(
+						'post_status'   => 'publish',
+						'post_password' => 'secret',
+					)
+				);
+				break;
+			case 'future':
+				$post_id = self::factory()->post->create(
+					array(
+						'post_status' => 'future',
+						'post_date'   => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),
+					)
+				);
+				break;
+			case 'attachment':
+				$post_id = self::factory()->attachment->create();
+				break;
+			default:
+				$post_id = $this->make_post( $state );
+		}
+
+		if ( 'admin' === $viewer ) {
+			wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		} elseif ( 'subscriber' === $viewer ) {
+			wp_set_current_user( $this->make_user() );
+		} else {
+			wp_set_current_user( 0 );
+		}
+
+		$endpoint_allows = 200 === $this->get_summary( $post_id )->get_status();
+		$block_renders   = '' !== trim( $this->render( $post_id ) );
+
+		$this->assertSame( $endpoint_allows, $block_renders, "{$state} post, {$viewer} viewer: block and endpoint must agree." );
+	}
+
+	/**
+	 * Every post state against every viewer.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function post_states_and_viewers(): array {
+		$cases = array();
+
+		foreach ( array( 'publish', 'draft', 'pending', 'private', 'trash', 'future', 'password', 'attachment' ) as $state ) {
+			foreach ( array( 'logged out', 'subscriber', 'admin' ) as $viewer ) {
+				$cases[ "{$state} / {$viewer}" ] = array( $state, $viewer );
+			}
+		}
+
+		return $cases;
+	}
+
 	public function test_nothing_renders_without_a_post(): void {
 		$this->assertSame( '', trim( $this->render( null ) ), 'No postId in context.' );
 		$this->assertSame( '', trim( $this->render( 999999 ) ), 'A post that does not exist.' );
