@@ -1,1 +1,4 @@
-/* Editor-only styles. Added with the block in a later phase. */
+/* Editor-only styles. The preview reuses the front end classes. */
+.wp-block-rating-block-rating .rating-block__display {
+	pointer-events: none;
+}
