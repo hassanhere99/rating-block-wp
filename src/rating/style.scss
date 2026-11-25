@@ -1,1 +1,138 @@
-/* Front end and editor styles. Added with the block in a later phase. */
+/**
+ * Front end and editor styles.
+ *
+ * Stars use glyphs, not colour alone: an empty star is an outline and a filled
+ * star is solid, so the state is readable without colour. Both take
+ * currentColor, so the theme's text colour decides the contrast. Override with
+ * --rating-block-color.
+ */
+
+.wp-block-rating-block-rating {
+	--rating-block-color: currentcolor;
+
+	.rating-block__fieldset {
+		margin: 0;
+		padding: 0;
+		border: 0;
+		min-inline-size: 0;
+	}
+
+	.rating-block__title {
+		margin: 0 0 0.25em;
+		padding: 0;
+		font-weight: 600;
+	}
+
+	.rating-block__summary,
+	.rating-block__status {
+		margin: 0.25em 0 0;
+	}
+
+	.rating-block__status {
+		min-height: 1.5em;
+
+		&.is-error {
+			font-weight: 600;
+		}
+	}
+
+	.rating-block__login {
+		margin: 0.25em 0 0;
+	}
+
+	/* The average as a row of stars, filled up to --rating-block-fill. */
+	.rating-block__display {
+		position: relative;
+		display: inline-block;
+		font-size: 1.75em;
+		line-height: 1;
+		letter-spacing: 0.1em;
+		color: var(--rating-block-color);
+		white-space: nowrap;
+
+		&::before {
+			content: "☆☆☆☆☆";
+		}
+
+		&::after {
+			content: "★★★★★";
+			position: absolute;
+			inset: 0 auto 0 0;
+			width: var(--rating-block-fill, 0%);
+			overflow: hidden;
+		}
+	}
+
+	/* Five radios, one per score. */
+	.rating-block__choices {
+		display: inline-flex;
+	}
+
+	/* Visually hidden, still focusable and still in the accessibility tree. */
+	.rating-block__input {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: 0;
+		opacity: 0;
+		overflow: hidden;
+	}
+
+	.rating-block__star {
+		display: inline-block;
+		padding: 0 0.05em;
+		font-size: 1.75em;
+		line-height: 1;
+		color: var(--rating-block-color);
+		cursor: default;
+
+		&::before {
+			content: "☆";
+		}
+	}
+
+	/* Filled: the chosen star and every star before it. */
+	.rating-block__input:checked + .rating-block__star,
+	.rating-block__star:has(~ .rating-block__input:checked) {
+
+		&::before {
+			content: "★";
+		}
+	}
+
+	.rating-block__input:focus-visible + .rating-block__star {
+		outline: 2px solid currentcolor;
+		outline-offset: 2px;
+		border-radius: 2px;
+	}
+
+	.rating-block__input:disabled + .rating-block__star {
+		opacity: 0.85;
+	}
+
+	/* Hover preview, only once the script has enabled the inputs. */
+	.rating-block__choices.is-interactive {
+
+		.rating-block__star {
+			cursor: pointer;
+		}
+
+		.rating-block__star:hover::before,
+		.rating-block__star:has(~ .rating-block__star:hover)::before {
+			content: "★";
+		}
+	}
+
+	/* Text that is only for assistive technology. */
+	.rating-block__sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
