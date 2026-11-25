@@ -1,9 +1,15 @@
 {
 	"phpVersion": "8.1",
-	"plugins": [ "." ],
+	"testsEnvironment": false,
+	"plugins": [],
+	"mappings": {
+		"wp-content/plugins/rating-block-wp": "."
+	},
 	"config": {
 		"WP_DEBUG": true,
-		"WP_DEBUG_LOG": true,
-		"SCRIPT_DEBUG": false
+		"WP_DEBUG_LOG": true
+	},
+	"lifecycleScripts": {
+		"afterStart": "npx wp-env run cli wp plugin activate rating-block-wp"
 	}
 }

@@ -10,7 +10,10 @@
 		"format": "wp-scripts format",
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
-		"wp-env": "wp-env"
+		"wp-env": "wp-env",
+		"env:start": "wp-env start",
+		"env:test:start": "wp-env start --config=.wp-env.test.json",
+		"test:php": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/plugins/rating-block-wp vendor/bin/phpunit"
 	},
 	"dependencies": {
 		"@wordpress/interactivity": "8.2.0"
