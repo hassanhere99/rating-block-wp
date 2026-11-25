@@ -138,6 +138,22 @@ final class Rest_Vote_Test extends Test_Case {
 		$this->assertSame( 403, $response->get_status() );
 	}
 
+	public function test_user_with_no_role_on_the_site_cannot_vote(): void {
+		// A logged-in user with no role has no 'read' capability. On multisite
+		// this is a network user who is not a member of the site.
+		$user_id = $this->make_user();
+		get_user_by( 'id', $user_id )->set_role( '' );
+		wp_set_current_user( $user_id );
+		$this->assertFalse( current_user_can( 'read' ), 'Precondition: the user has no read capability.' );
+
+		$post_id  = $this->make_post();
+		$response = $this->post_vote( $post_id, 4 );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertSame( 'rating_block_wp_cannot_read', $response->get_data()['code'] );
+		$this->assertSame( 0, $this->row_count() );
+	}
+
 	public function test_first_vote_inserts_a_row(): void {
 		$user_id = $this->make_user();
 		$post_id = $this->make_post();

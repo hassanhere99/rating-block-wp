@@ -121,7 +121,13 @@ final class Rest_Controller {
 	}
 
 	/**
-	 * Who may vote: a logged-in user, on a published, viewable post.
+	 * Who may vote: a logged-in user who has the 'read' capability on this
+	 * site, on a published, viewable post.
+	 *
+	 * The capability check matters on multisite, where a user can be logged in
+	 * to the network without being a member of this site. Such a user has no
+	 * role here and so no 'read'. On a single site every role has 'read', and
+	 * only a user whose roles were all removed fails the check.
 	 *
 	 * @param WP_REST_Request $request Request.
 	 * @return true|WP_Error
@@ -132,6 +138,14 @@ final class Rest_Controller {
 				'rating_block_wp_not_logged_in',
 				__( 'You must be logged in to vote.', 'rating-block-wp' ),
 				array( 'status' => 401 )
+			);
+		}
+
+		if ( ! current_user_can( 'read' ) ) {
+			return new WP_Error(
+				'rating_block_wp_cannot_read',
+				__( 'You are not allowed to vote on this site.', 'rating-block-wp' ),
+				array( 'status' => 403 )
 			);
 		}
 
