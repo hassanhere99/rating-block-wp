@@ -11,18 +11,22 @@
 		"lint:css": "wp-scripts lint-style",
 		"lint:js": "wp-scripts lint-js",
 		"test:js": "wp-scripts test-unit-js",
+		"test:e2e": "PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 wp-scripts test-e2e",
 		"wp-env": "wp-env",
 		"env:start": "wp-env start",
 		"env:test:start": "wp-env start --config=.wp-env.test.json",
-		"test:php": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/plugins/rating-block-wp vendor/bin/phpunit"
+		"test:php": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/plugins/rating-block-wp vendor/bin/phpunit",
+		"test:php:multisite": "wp-env run cli --config=.wp-env.test.json --env-cwd=wp-content/plugins/rating-block-wp vendor/bin/phpunit -c phpunit.multisite.xml.dist"
 	},
 	"dependencies": {
 		"@wordpress/interactivity": "8.2.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "1.65.1",
 		"@wordpress/block-editor": "20.1.0",
 		"@wordpress/blocks": "17.2.0",
 		"@wordpress/components": "45.0.0",
+		"@wordpress/e2e-test-utils-playwright": "3.3.0",
 		"@wordpress/env": "12.2.0",
 		"@wordpress/i18n": "7.2.0",
 		"@wordpress/scripts": "37.2.0",
