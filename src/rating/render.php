@@ -109,7 +109,7 @@ if ( $rating_block_wp_can_vote ) {
 ?>
 <?php // get_block_wrapper_attributes() runs esc_attr() on every value it returns, so it is echoed as is. ?>
 <div
-	<?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+	<?php echo get_block_wrapper_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Core escapes each value with esc_attr(). ?>
 	<?php if ( $rating_block_wp_can_vote ) : ?>
 		data-wp-interactive="rating-block/rating"
 		<?php
