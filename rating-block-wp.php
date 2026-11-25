@@ -25,6 +25,7 @@ require_once RATING_BLOCK_WP_DIR . 'includes/class-schema.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-votes.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-summary.php';
 require_once RATING_BLOCK_WP_DIR . 'includes/class-rest-controller.php';
+require_once RATING_BLOCK_WP_DIR . 'includes/class-cleanup.php';
 
 register_activation_hook( __FILE__, array( Schema::class, 'install' ) );
 
@@ -33,6 +34,8 @@ register_activation_hook( __FILE__, array( Schema::class, 'install' ) );
 add_action( 'plugins_loaded', array( Schema::class, 'maybe_upgrade' ) );
 
 Rest_Controller::register();
+Cleanup::register();
+
 /**
  * Register the block from the built block.json.
  *
