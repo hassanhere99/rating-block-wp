@@ -64,9 +64,17 @@ None of this is built.
 
 `Access::check_vote()` is called by the REST permission callback and by `render.php`, so the block never offers inputs for a vote the endpoint would refuse. A test renders the block and calls the summary endpoint for every post state (published, draft, pending, private, trash, future, password protected, attachment) and viewer (logged out, subscriber, administrator), and asserts that the block renders if and only if the endpoint answers 200.
 
-## 403 for unavailable posts matches core
+## Unavailable posts answer with core's status: 401 or 403
 
-A draft, private, pending, future or trashed post, a password-protected post, and a post type with no public view all answer 403 on vote. The core posts endpoint answers 403 for a post the caller cannot read, and this follows it. 404 is for a post that does not exist. The cost is that a 403 tells the caller the post exists. Returning 404 for both would hide that, and would differ from core.
+A draft, private, pending, future or trashed post, a password-protected post, and a post type with no public view are all unavailable. They answer with `rest_authorization_required_code()`: 401 for a logged-out caller and 403 for a logged-in one. 404 is for a post that does not exist.
+
+That is what core does for a post the caller cannot read. In WordPress 7.1.5, `WP_REST_Posts_Controller::get_item_permissions_check()` ends in `check_read_permission()`, which returns `false`, and `WP_REST_Server::dispatch()` turns `false` into `rest_forbidden` with that status code. Core does not call the function from the posts controller itself; the server does it for every route.
+
+Two differences from core. Core serves a password-protected post with its content withheld, where this plugin refuses it. And voting is stricter than reading: a post must be published to be voted on, while a summary also accepts an unpublished post the caller can read.
+
+For voting, a logged-out caller is refused earlier, with 401 `rating_block_wp_not_logged_in`, before the post is looked at. So the 401 for an unavailable post shows on the public summary route. A logged-in voter always gets 403.
+
+The cost is that the response tells the caller the post exists. Answering 404 for both would hide that, and would differ from core.
 
 ## Interactivity API, not a React view script
 
