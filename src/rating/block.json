@@ -3,15 +3,36 @@
 	"apiVersion": 3,
 	"name": "rating-block/rating",
 	"version": "0.1.0",
-	"title": "Rating Block",
+	"title": "Rating",
 	"category": "widgets",
 	"icon": "star-filled",
-	"description": "A 1 to 5 star rating block for the current post.",
-	"example": {},
+	"description": "A 1 to 5 star rating for the current post. Logged-in visitors can vote.",
+	"keywords": [ "rating", "stars", "vote" ],
+	"textdomain": "rating-block-wp",
+	"attributes": {
+		"label": {
+			"type": "string",
+			"default": ""
+		},
+		"showCount": {
+			"type": "boolean",
+			"default": true
+		},
+		"allowVoting": {
+			"type": "boolean",
+			"default": true
+		}
+	},
+	"usesContext": [ "postId" ],
 	"supports": {
+		"html": false,
 		"interactivity": true
 	},
-	"textdomain": "rating-block-wp",
+	"example": {
+		"attributes": {
+			"label": "Rate this post"
+		}
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
 	"style": "file:./style-index.css",
