@@ -1,7 +1,7 @@
 /**
  * Playwright config.
  *
- * Extends the @wordpress/scripts default so the tests in ./specs are found.
+ * Extends the `@wordpress/scripts` default so the tests in ./specs are found.
  * The default sets testDir to './specs', which Playwright resolves against the
  * config file inside node_modules, so it finds nothing. See NOTES-upstream.md.
  */
