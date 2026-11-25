@@ -58,6 +58,18 @@ const baseConfig = require( '@wordpress/scripts/config/playwright.config.js' );
 module.exports = { ...baseConfig, testDir: path.join( __dirname, 'specs' ) };
 ```
 
+**Related report, not the same bug**
+
+[WordPress/gutenberg#55419](https://github.com/WordPress/gutenberg/issues/55419)
+("Scripts: Default Playwright config file doesn't work", closed) is the same
+family of problem but a different cause. It was reported against
+`@wordpress/scripts` 26.14.0, where the config path used the wrong file
+extension, so the default config "does not exist". It was fixed in
+[#55453](https://github.com/WordPress/gutenberg/pull/55453). Here the config
+loads and runs; it is `testDir` that is wrong. I found no open issue for this
+symptom, and `packages/scripts/config/playwright.config.js` on `trunk` still
+sets `testDir: './specs'`.
+
 **Possible fix**
 
 Have the default config compute `testDir` from the project:
