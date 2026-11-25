@@ -56,18 +56,19 @@ final class Rest_Summary_Test extends Test_Case {
 		$this->assertSame( 2, $data['user_score'] );
 	}
 
-	public function test_missing_post_is_404(): void {
-		$this->assertSame( 404, $this->get_summary( 999999 )->get_status() );
-	}
+	public function test_draft_is_401_for_a_logged_out_visitor_and_403_for_a_logged_in_one(): void {
+		$post_id = $this->make_post( 'draft' );
 
-	public function test_draft_is_403_for_a_logged_out_visitor(): void {
-		$this->assertSame( 403, $this->get_summary( $this->make_post( 'draft' ) )->get_status() );
+		$this->assertSame( 401, $this->get_summary( $post_id )->get_status(), 'Logged out.' );
+
+		wp_set_current_user( $this->make_user() );
+		$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'Logged in.' );
 	}
 
 	public function test_private_post_summary_needs_permission_to_read_it(): void {
 		$post_id = $this->make_post( 'private' );
 
-		$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'Logged out.' );
+		$this->assertSame( 401, $this->get_summary( $post_id )->get_status(), 'Logged out.' );
 
 		wp_set_current_user( $this->make_user() );
 		$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'Subscriber.' );
@@ -76,7 +77,7 @@ final class Rest_Summary_Test extends Test_Case {
 		$this->assertSame( 200, $this->get_summary( $post_id )->get_status(), 'Administrator.' );
 	}
 
-	public function test_password_protected_post_is_403(): void {
+	public function test_password_protected_post_is_401_logged_out_and_403_logged_in(): void {
 		$post_id = self::factory()->post->create(
 			array(
 				'post_status'   => 'publish',
@@ -84,6 +85,77 @@ final class Rest_Summary_Test extends Test_Case {
 			)
 		);
 
-		$this->assertSame( 403, $this->get_summary( $post_id )->get_status() );
+		$this->assertSame( 401, $this->get_summary( $post_id )->get_status(), 'Logged out.' );
+
+		wp_set_current_user( $this->make_user() );
+		$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'Logged in.' );
+	}
+
+	/**
+	 * Every kind of unavailable post answers with rest_authorization_required_code(),
+	 * as core does for a post the caller cannot read: 401 logged out, 403 logged in.
+	 *
+	 * @dataProvider unavailable_posts
+	 *
+	 * @param string $state Which kind of unavailable post.
+	 */
+	public function test_unavailable_post_status_is_core_authorization_required_code( string $state ): void {
+		switch ( $state ) {
+			case 'password':
+				$post_id = self::factory()->post->create(
+					array(
+						'post_status'   => 'publish',
+						'post_password' => 'secret',
+					)
+				);
+				break;
+			case 'future':
+				$post_id = self::factory()->post->create(
+					array(
+						'post_status' => 'future',
+						'post_date'   => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),
+					)
+				);
+				break;
+			default:
+				$post_id = $this->make_post( $state );
+		}
+
+		wp_set_current_user( 0 );
+		$logged_out = $this->get_summary( $post_id );
+		$this->assertSame( 401, $logged_out->get_status() );
+		$this->assertSame( rest_authorization_required_code(), $logged_out->get_status() );
+		$this->assertSame( 'rating_block_wp_post_forbidden', $logged_out->get_data()['code'] );
+
+		wp_set_current_user( $this->make_user() );
+		$logged_in = $this->get_summary( $post_id );
+		$this->assertSame( 403, $logged_in->get_status() );
+		$this->assertSame( rest_authorization_required_code(), $logged_in->get_status() );
+		$this->assertSame( 'rating_block_wp_post_forbidden', $logged_in->get_data()['code'] );
+	}
+
+	/**
+	 * Post states a subscriber and a visitor cannot read. Attachments are left
+	 * out: a logged-in user can read one, as core allows, and voting on one is
+	 * covered by Rest_Vote_Test.
+	 *
+	 * @return array<string, array{0: string}>
+	 */
+	public static function unavailable_posts(): array {
+		return array(
+			'draft'    => array( 'draft' ),
+			'pending'  => array( 'pending' ),
+			'private'  => array( 'private' ),
+			'trash'    => array( 'trash' ),
+			'future'   => array( 'future' ),
+			'password' => array( 'password' ),
+		);
+	}
+
+	public function test_a_missing_post_is_404_for_everyone(): void {
+		$this->assertSame( 404, $this->get_summary( 999999 )->get_status(), 'Logged out.' );
+
+		wp_set_current_user( $this->make_user() );
+		$this->assertSame( 404, $this->get_summary( 999999 )->get_status(), 'Logged in.' );
 	}
 }
