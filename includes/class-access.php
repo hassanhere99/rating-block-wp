@@ -85,10 +85,16 @@ final class Access {
 	/**
 	 * Load a post and check that it may be rated or summarised.
 	 *
-	 * 404 if there is no such post. 403 if there is one but it is not
-	 * available: not published (draft, pending, private, future, trash), a type
-	 * that has no public view, or password protected. This matches how the core
-	 * posts endpoint answers for a post the caller cannot read.
+	 * 404 if there is no such post. If there is one but it is not available
+	 * (not published, a type that has no public view, or password protected),
+	 * the status is rest_authorization_required_code(): 401 for a logged-out
+	 * caller, 403 for a logged-in one.
+	 *
+	 * That is what core does for a post the caller cannot read. The posts
+	 * controller returns false from its permission check and WP_REST_Server
+	 * turns false into rest_forbidden with that same status code. Core serves a
+	 * password-protected post with its content withheld; this plugin refuses it,
+	 * which is stricter.
 	 *
 	 * Reading a summary also accepts an unpublished post that the current user
 	 * can read, such as their own private post. Voting does not: the spec is
@@ -120,7 +126,7 @@ final class Access {
 			return new WP_Error(
 				'rating_block_wp_post_forbidden',
 				__( 'This post cannot be rated.', 'rating-block-wp' ),
-				array( 'status' => 403 )
+				array( 'status' => rest_authorization_required_code() )
 			);
 		}
 

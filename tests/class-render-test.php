@@ -216,7 +216,7 @@ final class Render_Test extends Test_Case {
 			wp_set_current_user( $user_id );
 
 			$this->assertSame( '', trim( $this->render( $post_id ) ), 'No summary for a locked post.' );
-			$this->assertSame( 403, $this->get_summary( $post_id )->get_status(), 'The endpoint refuses it too.' );
+			$this->assertSame( rest_authorization_required_code(), $this->get_summary( $post_id )->get_status(), 'The endpoint refuses it too.' );
 		}
 	}
 
